@@ -35,7 +35,8 @@ func ToJSON(trim bool, r io.Reader) ([]interface{}, error) {
 				if trim {
 					trim := strings.TrimSpace(string(t))
 					if len(trim) > 0 {
-						stack.top().addPrimitive(trim)
+						// caution: we do NOT trim real text nodes by intention
+						stack.top().addPrimitive(string(t))
 					}
 				} else {
 					stack.top().addPrimitive(string(t))

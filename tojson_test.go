@@ -3,99 +3,143 @@ package jsonml
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
+	"reflect"
 	"testing"
 )
 
 // http://wiki.open311.org/JSON_and_XML_Conversion/
-const xmlX = `
+const xml0 = `
 <?xml version="1.0" encoding="UTF-8" ?>
-<root xmlns:h="http://www.w3.org/TR/html4/"
-xmlns:f="https://www.w3schools.com/furniture">
+<root>
 
-<h:table>
-  <h:tr>
-    <h:td>Apples</h:td>
-    <h:td>Bananas</h:td>
-  </h:tr>
-</h:table>
+	<title>This is an example</title>
+	
+	<details>
 
-<f:table>
-  <f:name>African Coffee Table</f:name>
-  <f:width>80</f:width>
-  <f:length>120</f:length>
-</f:table>
+		Something
+	
+		more
+		with
+		
+		a lot
+		of breaks!
+	</details>
+
+	<!-- this is an xml comment with < and > and ]] and [[ -->
+	
+	
+	<table caption="a tablet with fruits">
+	  <tr>
+		<td>0a</td>
+		<td>0b</td>
+	  </tr>
+       <tr>
+		<td>1a</td>
+		<td>1b</td>
+	  </tr>
+
+	</table>
+	
+	<table>
+	  <name>A table desk</name>
+	  <width>60</width>
+	  <length>113</length>
+	</table>
 
 </root>
 `
 
-const xml0 = `
-<ul>
-	<li style="color:red">First Item</li>
-	<li title="Some hover text." style="color:green">
-		Second Item
-	</li>
-	<li>
-		<span class="code-example-third">Third</span>
-		Item
-	</li>
-</ul>
-`
+type XML0Doc struct {
+	XMLName xml.Name `xml:"root"`
+	Title   string   `xml:"title"`
+	Details string   `xml:"details"`
 
-const json0 = `
-["ul",
-["li",
-{ "style" : "color:red" },
-"First Item"
-],
-["li",
-{
-"title" : "Some hover text.",
-"style" : "color:green"
-},
-"Second Item"
-],
-["li",
-["span",
-{ "class" : "code-example-third" },
-"Third"
-],
-" Item"
-]
-]
-`
-
-func TestTransform(t *testing.T) {
-
-	tests := []struct {
-		name string
-		args string
-		want string
-	}{
-		{"xml0", xmlX, json0},
-	}
-
-	//TODO test me properly
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			node, err := ToJSON(true, bytes.NewReader([]byte(tt.args)))
-			if err != nil {
-				t.Fatal(err)
-			}
-			//	if got := toString(node); got != tt.want {
-			//		t.Errorf("Transform() = %v, want %v", got, tt.want)
-			//	}
-
-			str, err := ToXML(node)
-			if err != nil {
-				t.Fatal(err)
-			}
-			fmt.Println(str)
-		})
-	}
+	Tables []XML0Table `xml:"table"`
 }
 
-func toString(arr []interface{}) string {
+type XML0Table struct {
+	XMLName xml.Name  `xml:"table"`
+	Caption string    `xml:"caption,attr"`
+	Rows    []XML0Row `xml:"tr"`
+}
+type XML0Row struct {
+	XMLName xml.Name `xml:"tr"`
+	Columns []string `xml:"td"`
+}
+
+func TestTransformXML0(t *testing.T) {
+	xml0ParsedOriginal := parseXML(t, xml0)
+
+	jsonML, err := ToJSON(true, bytes.NewReader([]byte(xml0)))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(toString(jsonML))
+
+	xmlFromJSONML, err := ToXML(jsonML)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+
+	xml0ParsedJSONML := parseXML(t, xmlFromJSONML)
+
+	if !reflect.DeepEqual(xml0ParsedOriginal, xml0ParsedJSONML) {
+		t.Fatalf("expected\n%+v\n but got \n%+v\n", toString(xml0ParsedOriginal), toString(xml0ParsedJSONML))
+	}
+
+}
+
+//==
+
+const xml1 = `
+<?xml version="1.0" encoding="UTF-8" ?>
+<root xmlns:h="http://my.domain.com/hello/world">
+	<h:title>
+		This is an example
+		<h:details>An example text with even more hello world tokens</h:details>
+	</h:title>
+</root>
+`
+
+func TestTransformXML1(t *testing.T) {
+
+	jsonML, err := ToJSON(true, bytes.NewReader([]byte(xml1)))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	xmlFromJSONML, err := ToXML(jsonML)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	jsonML2, err := ToJSON(true, bytes.NewReader([]byte(xmlFromJSONML)))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(jsonML, jsonML2) {
+		t.Fatalf("expected\n%+v\n but got \n%+v\n", toString(jsonML), toString(jsonML2))
+	}
+
+}
+
+//=
+
+func parseXML(t *testing.T, xmlText string) *XML0Doc {
+	xml0Struct := &XML0Doc{}
+	err := xml.Unmarshal([]byte(xmlText), xml0Struct)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return xml0Struct
+}
+
+func toString(arr interface{}) string {
 	tmp, err := json.Marshal(arr)
 	if err != nil {
 		panic(err)

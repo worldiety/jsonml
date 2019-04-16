@@ -5,6 +5,9 @@ import (
 	"encoding/xml"
 )
 
+// set quirkyEncoder to true, to avoid bloated namespace xml by the go encoder
+const quirkyEncoder = true
+
 // ToXML creates an XML from the given compatible array. It is not defined what happens, if the array is not
 // in jsonML format. Remember the format:
 //
@@ -27,7 +30,7 @@ func ToXML(jsonML []interface{}) (string, error) {
 
 // write creates the document from scratch in a recursive manner
 func write(nsList namespaces, root *jNode, enc *xml.Encoder) error {
-	err := enc.EncodeToken(xml.StartElement{Name: root.tagName(nsList), Attr: root.attributes(nsList)})
+	err := enc.EncodeToken(xml.StartElement{Name: root.tagName(quirkyEncoder, nsList), Attr: root.attributes(quirkyEncoder, nsList)})
 	if err != nil {
 		return err
 	}
@@ -46,7 +49,7 @@ func write(nsList namespaces, root *jNode, enc *xml.Encoder) error {
 		}
 
 	}
-	err = enc.EncodeToken(xml.EndElement{Name: root.tagName(nsList)})
+	err = enc.EncodeToken(xml.EndElement{Name: root.tagName(quirkyEncoder, nsList)})
 	if err != nil {
 		return err
 	}
