@@ -82,6 +82,8 @@ func ToJSON(trim bool, r io.Reader) ([]interface{}, error) {
 		}
 
 	}
-
+	if doc == nil {
+		return nil, fmt.Errorf("start of xml not found")
+	}
 	return *doc, nil
 }

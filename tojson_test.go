@@ -141,6 +141,26 @@ func TestTransformXML1(t *testing.T) {
 
 }
 
+func TestInvalidXML(t *testing.T) {
+	_, err := ToJSON(true, bytes.NewReader([]byte{}))
+	if err == nil {
+		t.Fatal("expected err")
+	}
+	t.Log(err)
+
+	_, err = ToJSON(true, bytes.NewReader([]byte("<root")))
+	if err == nil {
+		t.Fatal("expected err")
+	}
+	t.Log(err)
+
+	_, err = ToJSON(true, bytes.NewReader([]byte("<root><child></root></child>")))
+	if err == nil {
+		t.Fatal("expected err")
+	}
+	t.Log(err)
+}
+
 //=
 
 func parseXML(t *testing.T, xmlText string) *XML0Doc {
@@ -159,5 +179,3 @@ func toString(arr interface{}) string {
 	}
 	return string(tmp)
 }
-
-
