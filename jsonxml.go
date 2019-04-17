@@ -22,6 +22,14 @@ import (
 	"strings"
 )
 
+// wrapper is used to avoid type assertion on hidden types. This is a problem
+// because one can neither type assert hidden types nor their public base types.
+type wrapper interface {
+	// Unwrap returns a copy of the slice, so be careful: changing values at existing indices will probably work
+	// but things like appending definitely not
+	Unwrap() []interface{}
+}
+
 // namespaces just tracks url -> abbreviation/prefix relations
 type namespaces map[string]string
 
@@ -86,6 +94,26 @@ func newJNode(nsList namespaces, name xml.Name, attributes []xml.Attr) *jNode {
 		node = append(node, attrs)
 	}
 	return &node
+}
+
+// unwraps a jNode to its base type, however returns a slice copy
+func (n *jNode) Unwrap() []interface{} {
+	// 1)
+	//var tmp []interface{}
+	//tmp = *n // dereferencing copies the slice struct to the stack, then per definition the (base) types are equal
+	//return &tmp // get a pointer to the data of tmp => two slices which will create headaches
+
+	// 2)
+	// but this is what we want: we assume that it is legal to cast pointers
+	// (which never share a common base type) pointing to types of the same base type.
+	// Actually the go type system forbids this, but I don't know if there is really a reason for this.
+	//
+	// The only alternative is to either don't use structures with pointers to base types or avoid custom types at all
+	//return (*[]interface{})(unsafe.Pointer(n))
+
+	// 3)
+	// keep it simple
+	return *n
 }
 
 // namespaces parses the xmlns:x attributes
