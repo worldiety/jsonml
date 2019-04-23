@@ -31,10 +31,9 @@ const quirkyEncoder = true
 //    [2...] => optional, either json primitives (Text Nodes) or arrays (more children nodes)
 func ToXML(jsonML []interface{}) (string, error) {
 	writer := &bytes.Buffer{}
-	doc := jNode(jsonML)
-	nsList := doc.namespaces()
+	nsList := getNamespaces(&jsonML)
 	enc := xml.NewEncoder(writer)
-	err := write(nsList, &doc, enc)
+	err := write(nsList, &jsonML, enc)
 	if err != nil {
 		return writer.String(), err
 	}
@@ -44,11 +43,11 @@ func ToXML(jsonML []interface{}) (string, error) {
 
 // write creates the document from scratch in a recursive manner
 func write(nsList namespaces, root *jNode, enc *xml.Encoder) error {
-	err := enc.EncodeToken(xml.StartElement{Name: root.tagName(quirkyEncoder, nsList), Attr: root.attributes(quirkyEncoder, nsList)})
+	err := enc.EncodeToken(xml.StartElement{Name: tagName(root, quirkyEncoder, nsList), Attr: attributes(root, quirkyEncoder, nsList)})
 	if err != nil {
 		return err
 	}
-	for _, c := range root.children() {
+	for _, c := range children(root) {
 		if cnode, ok := c.(*jNode); ok {
 			err = write(nsList, cnode, enc)
 			if err != nil {
@@ -63,7 +62,7 @@ func write(nsList namespaces, root *jNode, enc *xml.Encoder) error {
 		}
 
 	}
-	err = enc.EncodeToken(xml.EndElement{Name: root.tagName(quirkyEncoder, nsList)})
+	err = enc.EncodeToken(xml.EndElement{Name: tagName(root, quirkyEncoder, nsList)})
 	if err != nil {
 		return err
 	}

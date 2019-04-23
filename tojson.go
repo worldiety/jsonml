@@ -50,10 +50,10 @@ func ToJSON(trim bool, r io.Reader) ([]interface{}, error) {
 					trim := strings.TrimSpace(string(t))
 					if len(trim) > 0 {
 						// caution: we do NOT trim real text nodes by intention
-						stack.top().addPrimitive(string(t))
+						addPrimitive(stack.top(), string(t))
 					}
 				} else {
-					stack.top().addPrimitive(string(t))
+					addPrimitive(stack.top(), string(t))
 				}
 
 			}
@@ -74,7 +74,7 @@ func ToJSON(trim bool, r io.Reader) ([]interface{}, error) {
 				doc = newJNode(nsList, t.Name, t.Attr)
 				stack.push(doc)
 			} else {
-				node := stack.top().addNode(nsList, t.Name, t.Attr)
+				node := addNode(stack.top(), nsList, t.Name, t.Attr)
 				stack.push(node)
 			}
 		case xml.EndElement:
